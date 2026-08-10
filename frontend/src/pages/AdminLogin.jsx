@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Aperture, Eye, EyeOff, LogIn, ShieldCheck } from "lucide-react";
 import { login } from "../lib/api";
+import { LOGIN } from "../constants/testIds/auth";
 import Logo from "../components/site/Logo";
 import { toast, Toaster } from "sonner";
 
@@ -105,6 +106,16 @@ export default function AdminLogin() {
             {loading ? "Signing in…" : (<>Sign in <LogIn size={14} /></>)}
           </button>
         </form>
+
+          <div className="mt-6 text-right">
+            <Link
+              to="/admin/forgot-password"
+              data-testid={LOGIN.forgotPasswordLink}
+              className="text-[10px] font-mono uppercase tracking-wider text-[color:var(--ink)]/45 hover:text-[color:var(--copper)]"
+            >
+              Forgot password?
+            </Link>
+          </div>
 
           <div className="mt-8 pt-6 border-t border-[color:var(--ink)]/10 flex items-center gap-3 text-[10px] font-mono uppercase tracking-wider text-[color:var(--ink)]/45">
             <Aperture size={15} /> Private studio · Sessions expire automatically

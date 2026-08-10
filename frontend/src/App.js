@@ -7,6 +7,7 @@ import GalleryPage from "@/pages/GalleryPage";
 import AlbumPage from "@/pages/AlbumPage";
 import Contact from "@/pages/Contact";
 import AdminLogin from "@/pages/AdminLogin";
+import AdminForgotPassword from "@/pages/AdminForgotPassword";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminSettings from "@/pages/AdminSettings";
 import { auth, verifyAdmin } from "@/lib/api";
@@ -81,6 +82,7 @@ export default function App() {
             </Route>
 
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
             <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
             <Route path="/admin/settings" element={<RequireAdmin><AdminSettings /></RequireAdmin>} />
 

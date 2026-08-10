@@ -34,6 +34,21 @@ export async function login(username, password) {
   return data;
 }
 
+// A successful reset signs the admin straight in, so the spent recovery
+// code is never a dead end for someone already locked out.
+export async function resetPassword(username, recoveryCode, newPassword) {
+  const { data } = await api.post("/admin/password/reset", {
+    username,
+    recovery_code: recoveryCode,
+    new_password: newPassword,
+  });
+  auth.setToken(data.token);
+  return data;
+}
+
+export const fetchRecoveryStatus = () => api.get(`/admin/recovery-code`).then((r) => r.data);
+export const generateRecoveryCode = () => api.post(`/admin/recovery-code`).then((r) => r.data);
+
 // Media
 export const fetchMedia = (category) => api.get(`/media/${category}`).then((r) => r.data);
 export const fetchAllMedia = () => api.get(`/media`).then((r) => r.data);
