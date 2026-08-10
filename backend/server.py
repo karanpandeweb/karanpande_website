@@ -1,59 +1,46 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import re
 import logging
 import uuid
 import jwt
-import urllib.parse
+import secrets
+import time
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Literal
 from datetime import datetime, timedelta, timezone
+from backend.postgres_store import PostgresStore
 
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 
-def sanitize_mongo_url(url: str) -> str:
-    if not url:
-        return url
-    prefix_match = re.match(r"^(mongodb(?:\+srv)?://)", url)
-    if not prefix_match:
-        return url
-    prefix = prefix_match.group(1)
-    rest = url[len(prefix):]
-    
-    if "@" not in rest:
-        return url
-    credentials, host_part = rest.rsplit("@", 1)
-    
-    if ":" not in credentials:
-        username = urllib.parse.quote_plus(urllib.parse.unquote(credentials))
-        return f"{prefix}{username}@{host_part}"
-    
-    username, password = credentials.split(":", 1)
-    username_quoted = urllib.parse.quote_plus(urllib.parse.unquote(username))
-    password_quoted = urllib.parse.quote_plus(urllib.parse.unquote(password))
-    return f"{prefix}{username_quoted}:{password_quoted}@{host_part}"
+def required_env(name: str) -> str:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
 
 
-MONGO_URL = sanitize_mongo_url(os.environ["MONGO_URL"])
-DB_NAME = os.environ["DB_NAME"]
-ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "karan")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "karan@2026")
-JWT_SECRET = os.environ.get("JWT_SECRET", "change-me")
+DATABASE_URL = required_env("DATABASE_URL")
+ADMIN_USERNAME = required_env("ADMIN_USERNAME")
+ADMIN_PASSWORD = required_env("ADMIN_PASSWORD")
+JWT_SECRET = required_env("JWT_SECRET")
 JWT_ALGO = "HS256"
 JWT_EXP_HOURS = 24 * 7
+LOGIN_WINDOW_SECONDS = 15 * 60
+LOGIN_MAX_ATTEMPTS = 5
+login_attempts: dict[str, list[float]] = {}
 
-client = AsyncIOMotorClient(MONGO_URL)
-db = client[DB_NAME]
+client = PostgresStore(DATABASE_URL)
+db = client
 
 app = FastAPI(title="Karan Pande Photography API")
 api_router = APIRouter(prefix="/api")
@@ -66,6 +53,8 @@ logging.basicConfig(level=logging.INFO)
 # ---------- Types ----------
 Category = Literal["wedding", "pre-wedding", "cinematic"]
 MediaKind = Literal["image", "video"]
+ImageFit = Literal["cover", "contain"]
+ImagePosition = Literal["center", "top", "bottom", "left", "right"]
 
 
 def slugify(s: str) -> str:
@@ -87,6 +76,8 @@ class MediaItem(BaseModel):
     caption: str = ""
     order: int = 0
     album_id: Optional[str] = None
+    fit: ImageFit = "cover"
+    position: ImagePosition = "center"
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
@@ -99,6 +90,8 @@ class MediaCreate(BaseModel):
     caption: str = ""
     order: int = 0
     album_id: Optional[str] = None
+    fit: ImageFit = "cover"
+    position: ImagePosition = "center"
 
 
 class MediaUpdate(BaseModel):
@@ -110,6 +103,8 @@ class MediaUpdate(BaseModel):
     kind: Optional[MediaKind] = None
     category: Optional[Category] = None
     album_id: Optional[str] = None
+    fit: Optional[ImageFit] = None
+    position: Optional[ImagePosition] = None
 
 
 class Album(BaseModel):
@@ -124,6 +119,8 @@ class Album(BaseModel):
     location: str = ""
     date: str = ""  # e.g. "Nov 2024"
     order: int = 0
+    cover_fit: ImageFit = "cover"
+    cover_position: ImagePosition = "center"
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
@@ -136,6 +133,8 @@ class AlbumCreate(BaseModel):
     date: str = ""
     order: int = 0
     slug: Optional[str] = None
+    cover_fit: ImageFit = "cover"
+    cover_position: ImagePosition = "center"
 
 
 class AlbumUpdate(BaseModel):
@@ -146,6 +145,8 @@ class AlbumUpdate(BaseModel):
     date: Optional[str] = None
     order: Optional[int] = None
     slug: Optional[str] = None
+    cover_fit: Optional[ImageFit] = None
+    cover_position: Optional[ImagePosition] = None
 
 
 class Testimonial(BaseModel):
@@ -189,12 +190,28 @@ class LoginResponse(BaseModel):
     username: str
 
 
+class FeaturedFrame(BaseModel):
+    url: str
+    title: str = "Featured frame"
+    fit: ImageFit = "cover"
+    position: ImagePosition = "center"
+
+
+DEFAULT_FEATURED_FRAMES = [
+    FeaturedFrame(url="/assets/placeholders/ai-wedding-bride.jpg", title="Before the vows"),
+    FeaturedFrame(url="/assets/placeholders/ai-prewedding-field.jpg", title="Blue hour"),
+    FeaturedFrame(url="/assets/placeholders/ai-cinematic-baraat.jpg", title="Baraat in motion"),
+    FeaturedFrame(url="https://images.unsplash.com/photo-1665960213508-48f07086d49c?auto=format&fit=crop&w=1600&q=85", title="Mandap light"),
+    FeaturedFrame(url="https://images.pexels.com/photos/35069916/pexels-photo-35069916.jpeg?auto=compress&cs=tinysrgb&w=1600", title="By the sea"),
+]
+
+
 class SiteSettings(BaseModel):
     model_config = ConfigDict(extra="ignore")
     hero_video_url: str = "https://videos.pexels.com/video-files/5849887/5849887-uhd_2560_1440_24fps.mp4"
-    hero_poster_url: str = "https://images.pexels.com/photos/33419097/pexels-photo-33419097.jpeg?auto=compress&cs=tinysrgb&w=1600"
-    hero_headline_1: str = "Weddings, held"
-    hero_headline_2: str = "like heirlooms."
+    hero_poster_url: str = "/assets/placeholders/ai-hero-wedding.jpg"
+    hero_headline_1: str = "Stories that feel"
+    hero_headline_2: str = "like your own."
     hero_subtitle: str = "Karan Pande photographs weddings, pre-wedding stories and cinematic films across India — quiet, editorial, and unhurried."
     about_photo_url: str = "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1200&q=80"
     about_bio_1: str = "I photograph weddings, pre-wedding stories, and cinematic films out of a small studio in Sambhaji Nagar. Six years in, I'm still moved by the same three things — first looks, the last dance, and the way sunlight lands on a mother's hand."
@@ -204,6 +221,7 @@ class SiteSettings(BaseModel):
     email: str = "hello@karanpande.in"
     instagram: str = "karanpande"
     location: str = "Sambhaji Nagar, Maharashtra · India"
+    featured_frames: List[FeaturedFrame] = Field(default_factory=lambda: [frame.model_copy() for frame in DEFAULT_FEATURED_FRAMES])
 
 
 class SiteSettingsUpdate(BaseModel):
@@ -220,6 +238,7 @@ class SiteSettingsUpdate(BaseModel):
     email: Optional[str] = None
     instagram: Optional[str] = None
     location: Optional[str] = None
+    featured_frames: Optional[List[FeaturedFrame]] = None
 
 
 # ---------- Auth ----------
@@ -244,6 +263,25 @@ def require_admin(creds: Optional[HTTPAuthorizationCredentials] = Depends(securi
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+
+def enforce_login_rate_limit(client_key: str) -> None:
+    now = time.monotonic()
+    recent = [stamp for stamp in login_attempts.get(client_key, []) if now - stamp < LOGIN_WINDOW_SECONDS]
+    if len(recent) >= LOGIN_MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many sign-in attempts. Try again in 15 minutes.")
+    recent.append(now)
+    login_attempts[client_key] = recent
+
+
+async def validate_album_assignment(album_id: Optional[str], category: Category) -> None:
+    if not album_id:
+        return
+    album = await db.albums.find_one({"id": album_id}, {"_id": 0, "category": 1})
+    if not album:
+        raise HTTPException(status_code=400, detail="Selected album does not exist")
+    if album["category"] != category:
+        raise HTTPException(status_code=400, detail="Media category must match its album category")
 
 
 # ---------- Seed data ----------
@@ -367,14 +405,24 @@ async def root():
 
 @api_router.get("/health")
 async def health():
-    return {"status": "ok"}
+    try:
+        await db.command("ping")
+    except Exception as exc:
+        logger.error("Database health check failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Database unavailable")
+    return {"status": "ok", "database": "connected"}
 
 
 # --- Auth
 @api_router.post("/admin/login", response_model=LoginResponse)
-async def admin_login(body: LoginRequest):
-    if body.username != ADMIN_USERNAME or body.password != ADMIN_PASSWORD:
+async def admin_login(body: LoginRequest, request: Request):
+    client_key = request.client.host if request.client else "unknown"
+    enforce_login_rate_limit(client_key)
+    username_ok = secrets.compare_digest(body.username.encode(), ADMIN_USERNAME.encode())
+    password_ok = secrets.compare_digest(body.password.encode(), ADMIN_PASSWORD.encode())
+    if not username_ok or not password_ok:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    login_attempts.pop(client_key, None)
     return LoginResponse(token=create_token(body.username), username=body.username)
 
 
@@ -396,6 +444,7 @@ async def list_media(category: Category):
 
 @api_router.post("/admin/media", response_model=MediaItem)
 async def create_media(body: MediaCreate, user: str = Depends(require_admin)):
+    await validate_album_assignment(body.album_id, body.category)
     item = MediaItem(**body.model_dump())
     await db.media.insert_one(item.model_dump())
     return item
@@ -406,6 +455,10 @@ async def update_media(item_id: str, body: MediaUpdate, user: str = Depends(requ
     updates = {k: v for k, v in body.model_dump().items() if v is not None}
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
+    current = await db.media.find_one({"id": item_id}, {"_id": 0})
+    if not current:
+        raise HTTPException(status_code=404, detail="Media not found")
+    await validate_album_assignment(updates.get("album_id", current.get("album_id")), updates.get("category", current["category"]))
     res = await db.media.update_one({"id": item_id}, {"$set": updates})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Media not found")
@@ -444,6 +497,8 @@ async def get_album_with_media(category: Category, slug: str):
 async def create_album(body: AlbumCreate, user: str = Depends(require_admin)):
     payload = body.model_dump()
     payload["slug"] = payload.get("slug") or slugify(payload["name"])
+    if await db.albums.find_one({"category": payload["category"], "slug": payload["slug"]}):
+        raise HTTPException(status_code=409, detail="An album with this URL already exists in the category")
     album = Album(**payload)
     await db.albums.insert_one(album.model_dump())
     return album
@@ -456,6 +511,13 @@ async def update_album(album_id: str, body: AlbumUpdate, user: str = Depends(req
         raise HTTPException(status_code=400, detail="No fields to update")
     if updates.get("name") and not updates.get("slug"):
         updates["slug"] = slugify(updates["name"])
+    if updates.get("slug"):
+        current = await db.albums.find_one({"id": album_id}, {"_id": 0})
+        if not current:
+            raise HTTPException(status_code=404, detail="Album not found")
+        duplicate = await db.albums.find_one({"category": current["category"], "slug": updates["slug"], "id": {"$ne": album_id}})
+        if duplicate:
+            raise HTTPException(status_code=409, detail="An album with this URL already exists in the category")
     res = await db.albums.update_one({"id": album_id}, {"$set": updates})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Album not found")
@@ -520,10 +582,44 @@ async def update_settings(body: SiteSettingsUpdate, user: str = Depends(require_
     return await db.settings.find_one({"_id": "site"}, {"_id": 0})
 
 
+# --- Direct image uploads for non-technical studio users
+MAX_UPLOAD_BYTES = 4 * 1024 * 1024
+ALLOWED_IMAGE_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+}
+
+
+@api_router.post("/admin/upload")
+async def upload_image(file: UploadFile = File(...), user: str = Depends(require_admin)):
+    suffix = ALLOWED_IMAGE_TYPES.get(file.content_type or "")
+    if not suffix:
+        raise HTTPException(status_code=400, detail="Please choose a JPG, PNG, or WebP image")
+    content = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="Image is too large after optimization. Maximum size is 4 MB")
+    upload_id = uuid.uuid4().hex
+    filename = f"{upload_id}{suffix}"
+    await db.save_upload(upload_id, filename, file.content_type or "application/octet-stream", content)
+    return {"url": f"/api/uploads/{upload_id}", "filename": filename, "size": len(content)}
+
+
+@api_router.get("/uploads/{upload_id}")
+async def get_uploaded_image(upload_id: str):
+    upload = await db.get_upload(upload_id)
+    if not upload:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return Response(
+        content=bytes(upload["content"]),
+        media_type=upload["content_type"],
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
+
+
 app.include_router(api_router)
 
 FRONTEND_BUILD_DIR = ROOT_DIR.parent / "frontend" / "build"
-
 if FRONTEND_BUILD_DIR.exists():
     app.mount("/static", StaticFiles(directory=FRONTEND_BUILD_DIR / "static"), name="static")
 
@@ -536,10 +632,12 @@ if FRONTEND_BUILD_DIR.exists():
             return FileResponse(index_file)
         raise HTTPException(status_code=404, detail="Index file not found")
 
+cors_origins = [origin.strip() for origin in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
+    allow_origins=cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -547,9 +645,15 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def on_startup():
+    await client.initialize()
+    await db.albums.create_index([("category", 1), ("slug", 1)], unique=True)
+    await db.albums.create_index("id", unique=True)
+    await db.media.create_index("id", unique=True)
+    await db.media.create_index([("album_id", 1), ("order", 1)])
+    await db.testimonials.create_index("id", unique=True)
     await seed_if_empty()
 
 
 @app.on_event("shutdown")
 async def on_shutdown():
-    client.close()
+    await client.close()

@@ -4,16 +4,18 @@ import { ArrowUpRight, Play } from "lucide-react";
 import { fetchAlbums } from "../lib/api";
 import RevealHeading from "../components/site/RevealHeading";
 import { FadeUp } from "../components/site/Reveal";
+import { fallbackAlbums } from "../data/fallbackContent";
 
 /**
  * Album grid — used for /wedding, /pre-wedding, /cinematic.
  * Renders one card per album (couple name / film title) linking to the album page.
  */
 export default function GalleryPage({ category, title, chapter, subtitle, next }) {
-  const [albums, setAlbums] = useState([]);
+  const [albums, setAlbums] = useState(() => fallbackAlbums(category));
 
   useEffect(() => {
-    fetchAlbums(category).then(setAlbums).catch(() => {});
+    setAlbums(fallbackAlbums(category));
+    fetchAlbums(category).then((items) => setAlbums(items.length ? items : fallbackAlbums(category))).catch(() => {});
   }, [category]);
 
   // asymmetric col-span pattern
@@ -36,7 +38,7 @@ export default function GalleryPage({ category, title, chapter, subtitle, next }
       <section className="mx-auto max-w-[1600px] px-5 md:px-10">
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 md:col-span-9">
-            <div className="eyebrow">{chapter} · The Folder</div>
+            <div className="eyebrow">{chapter} · Contact sheet</div>
             <RevealHeading
               lines={[title]}
               className="font-serif italic text-[color:var(--ink)] leading-[0.9] mt-5 md:mt-6 tracking-tight block"
@@ -44,7 +46,7 @@ export default function GalleryPage({ category, title, chapter, subtitle, next }
             />
           </div>
           <div className="col-span-12 md:col-span-3 md:pt-6 md:text-right">
-            <span className="eyebrow text-[color:var(--copper)]">{String(albums.length).padStart(2, "0")} albums</span>
+            <span className="eyebrow text-[color:var(--copper)]">{String(albums.length).padStart(2, "0")} story rolls</span>
           </div>
         </div>
         <FadeUp delay={0.4}>
@@ -71,7 +73,7 @@ export default function GalleryPage({ category, title, chapter, subtitle, next }
                   className="group block"
                 >
                   <div className={`img-frame ${ratios[i % ratios.length]} relative`}>
-                    {a.cover && <img src={a.cover} alt={a.name} />}
+                    {a.cover && <img src={a.cover} alt={a.name} style={{ objectFit: a.cover_fit || "cover", objectPosition: a.cover_position || "center" }} />}
                     {isCinematic && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[color:var(--copper)]/95 flex items-center justify-center text-[color:var(--cream)] transition-transform group-hover:scale-105">
@@ -96,7 +98,7 @@ export default function GalleryPage({ category, title, chapter, subtitle, next }
                     </p>
                   )}
                   <div className="mt-3 flex items-center gap-2 text-[10px] tracking-[0.3em] uppercase text-[color:var(--ink)]/60 group-hover:text-[color:var(--copper)] transition-colors">
-                    Open the folder <ArrowUpRight size={12} />
+                    View contact sheet <ArrowUpRight size={12} />
                   </div>
                 </Link>
               </FadeUp>

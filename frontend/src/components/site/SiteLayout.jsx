@@ -9,7 +9,7 @@ export default function SiteLayout() {
       <div className="bg-[color:var(--cream)] text-[color:var(--ink)]">
         <div className="grain" aria-hidden />
         <Nav />
-        <main>
+        <main id="main-content">
           <Outlet />
         </main>
         <Footer />

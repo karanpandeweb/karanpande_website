@@ -1,4 +1,5 @@
 import "@/App.css";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import SiteLayout from "@/components/site/SiteLayout";
 import Home from "@/pages/Home";
@@ -8,11 +9,21 @@ import Contact from "@/pages/Contact";
 import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminSettings from "@/pages/AdminSettings";
-import { auth } from "@/lib/api";
+import { auth, verifyAdmin } from "@/lib/api";
 import { SettingsProvider } from "@/lib/settings";
 
 function RequireAdmin({ children }) {
-  if (!auth.isAuthed()) return <Navigate to="/admin/login" replace />;
+  const [status, setStatus] = useState(auth.isAuthed() ? "checking" : "guest");
+
+  useEffect(() => {
+    if (!auth.isAuthed()) return;
+    verifyAdmin().then((valid) => setStatus(valid ? "ready" : "guest"));
+  }, []);
+
+  if (status === "guest") return <Navigate to="/admin/login" replace />;
+  if (status === "checking") {
+    return <div className="min-h-screen flex items-center justify-center bg-[color:var(--cream)]"><span className="eyebrow">Verifying studio access…</span></div>;
+  }
   return children;
 }
 

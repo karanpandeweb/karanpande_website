@@ -9,6 +9,11 @@ export default function Lightbox({ open, onClose, children }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -19,10 +24,14 @@ export default function Lightbox({ open, onClose, children }) {
           className="fixed inset-0 z-[90] bg-[color:var(--ink)]/90 backdrop-blur-sm flex items-center justify-center p-4"
           data-testid="lightbox"
           onClick={onClose}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Media viewer"
         >
           <button
             onClick={onClose}
             data-testid="lightbox-close"
+            aria-label="Close media viewer"
             className="absolute top-6 right-6 text-[color:var(--cream)] hover:text-[color:var(--copper)] transition"
           >
             <X size={26} />

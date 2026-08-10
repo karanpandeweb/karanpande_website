@@ -5,6 +5,7 @@ import { fetchAlbumBySlug } from "../lib/api";
 import RevealHeading from "../components/site/RevealHeading";
 import { FadeUp } from "../components/site/Reveal";
 import Lightbox from "../components/site/Lightbox";
+import { fallbackAlbum } from "../data/fallbackContent";
 
 const catLabels = { "wedding": "Weddings", "pre-wedding": "Pre-Wedding", "cinematic": "Cinematic" };
 
@@ -16,10 +17,11 @@ export default function AlbumPage({ category }) {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    setData(null); setNotFound(false); setActive(null);
+    const fallback = fallbackAlbum(category, slug);
+    setData(fallback); setNotFound(false); setActive(null);
     fetchAlbumBySlug(category, slug)
       .then(setData)
-      .catch(() => setNotFound(true));
+      .catch(() => { if (!fallback) setNotFound(true); });
   }, [category, slug]);
 
   if (notFound) {
@@ -62,7 +64,7 @@ export default function AlbumPage({ category }) {
       {/* Header */}
       <section className="mx-auto max-w-[1600px] px-5 md:px-10">
         <Link to={`/${category}`} className="eyebrow inline-flex items-center gap-2 hover:text-[color:var(--copper)]">
-          <ArrowLeft size={12} /> {catLabels[category]} folder
+          <ArrowLeft size={12} /> {catLabels[category]} contact sheet
         </Link>
         <div className="grid grid-cols-12 gap-6 mt-6">
           <div className="col-span-12 md:col-span-9">
@@ -94,7 +96,7 @@ export default function AlbumPage({ category }) {
       <section className="mx-auto max-w-[1600px] px-5 md:px-10 mt-12 md:mt-24">
         {items.length === 0 ? (
           <div className="py-32 text-center text-[color:var(--ink)]/50 border-y border-[color:var(--ink)]/10">
-            <p className="font-serif italic text-3xl">This folder is being curated.</p>
+            <p className="font-serif italic text-3xl">This roll is in the darkroom.</p>
           </div>
         ) : isVideo ? (
           <div className="grid grid-cols-12 gap-4 md:gap-8">
@@ -129,7 +131,7 @@ export default function AlbumPage({ category }) {
                   data-testid={`album-img-${i + 1}`}
                   className="img-frame w-full h-full block"
                 >
-                  <img src={it.url} alt={it.title || album.name} loading="lazy" />
+                  <img src={it.url} alt={it.title || album.name} loading="lazy" style={{ objectFit: it.fit || "cover", objectPosition: it.position || "center" }} />
                 </button>
                 {it.title && (
                   <div className="mt-2 flex items-center justify-between text-[10px] tracking-[0.3em] uppercase text-[color:var(--ink)]/60">
@@ -148,7 +150,7 @@ export default function AlbumPage({ category }) {
         <FadeUp>
           <div className="border-t border-[color:var(--ink)]/15 pt-10 flex items-end justify-between">
             <div>
-              <div className="eyebrow">Back to folder</div>
+              <div className="eyebrow">Back to contact sheet</div>
               <Link
                 to={`/${category}`}
                 data-testid="back-to-folder"

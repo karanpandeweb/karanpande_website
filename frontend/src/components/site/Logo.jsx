@@ -1,113 +1,28 @@
 /**
- * Shutter Shots by KP — brand mark.
- * Now drawn as a stylised rangefinder camera silhouette
- * with an aperture-blade lens.
- *
- * variant: "full" | "icon"
+ * A focus-frame monogram for Karan Pande: KP drawn as one continuous camera
+ * signature, with an aperture point and frame counter details.
  */
 export default function Logo({ variant = "full", className = "" }) {
-  // Aperture blades inside the lens
-  const blades = [0, 60, 120, 180, 240, 300].map((deg) => (
-    <path
-      key={deg}
-      d="M 36 38 L 36 27 A 11 11 0 0 1 45.526 32.5 Z"
-      fill="currentColor"
-      opacity="0.15"
-      transform={`rotate(${deg} 36 38)`}
-    />
-  ));
-
-  const camera = (
+  const mark = (
     <g>
-      {/* Camera body */}
-      <rect
-        x="4" y="16" width="64" height="42" rx="3.5" ry="3.5"
-        stroke="currentColor" strokeWidth="1.2" fill="none"
-      />
-
-      {/* Viewfinder / pentaprism bump */}
-      <path
-        d="M 22 16 L 26 8 L 46 8 L 50 16 Z"
-        stroke="currentColor" strokeWidth="1.2" fill="none"
-        strokeLinejoin="round"
-      />
-
-      {/* Shutter button (top-left) */}
-      <circle cx="14" cy="12" r="2" fill="currentColor" />
-      <circle cx="14" cy="12" r="3.2" stroke="currentColor" strokeWidth="0.6" fill="none" opacity="0.55" />
-
-      {/* Top dial (top-right) */}
-      <rect
-        x="55" y="10" width="8" height="4" rx="1" ry="1"
-        stroke="currentColor" strokeWidth="0.7" fill="none" opacity="0.7"
-      />
-
-      {/* Rangefinder mini window (right of viewfinder) */}
-      <rect
-        x="52" y="22" width="8" height="5" rx="0.6" ry="0.6"
-        stroke="currentColor" strokeWidth="0.7" fill="none" opacity="0.6"
-      />
-
-      {/* Grip lines */}
-      <line x1="10" y1="46" x2="10" y2="52" stroke="currentColor" strokeWidth="0.65" opacity="0.55" />
-      <line x1="12.5" y1="46" x2="12.5" y2="52" stroke="currentColor" strokeWidth="0.65" opacity="0.55" />
-      <line x1="15" y1="46" x2="15" y2="52" stroke="currentColor" strokeWidth="0.65" opacity="0.55" />
-
-      {/* Lens — outer ring */}
-      <circle cx="36" cy="38" r="14" stroke="currentColor" strokeWidth="1.1" fill="none" />
-      {/* Lens — inner ring */}
-      <circle cx="36" cy="38" r="11" stroke="currentColor" strokeWidth="0.6" fill="none" opacity="0.5" />
-      {/* Aperture blades */}
-      {blades}
-      {/* Inner hexagon (aperture opening) */}
-      <polygon
-        points="36,28 44.66,33 44.66,43 36,48 27.34,43 27.34,33"
-        stroke="currentColor" strokeWidth="0.75" fill="none" opacity="0.6"
-      />
-      {/* Crosshair */}
-      <line x1="36" y1="32" x2="36" y2="44" stroke="currentColor" strokeWidth="0.55" opacity="0.55" />
-      <line x1="30" y1="38" x2="42" y2="38" stroke="currentColor" strokeWidth="0.55" opacity="0.55" />
-      {/* Center dot (shutter) */}
-      <circle cx="36" cy="38" r="2" fill="currentColor" />
+      <path d="M6 20V6h14M58 6h14v14M72 58v14H58M20 72H6V58" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M22 58V20m0 20 20-20M25 37l18 21M44 58V20h9c10 0 15 5 15 12s-5 12-15 12h-9" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="52" cy="32" r="3.4" fill="var(--copper)" />
+      <text x="7" y="48" fill="currentColor" fontFamily="'DM Mono', monospace" fontSize="5" letterSpacing="1">01</text>
+      <text x="61" y="48" fill="currentColor" fontFamily="'DM Mono', monospace" fontSize="5" letterSpacing="1">KP</text>
     </g>
   );
 
   if (variant === "icon") {
-    return (
-      <svg viewBox="0 0 72 64" className={className} fill="none" aria-label="Shutter Shots by Karan Pande">
-        {camera}
-      </svg>
-    );
+    return <svg viewBox="0 0 78 78" className={className} role="img" aria-label="Karan Pande Photography">{mark}</svg>;
   }
 
   return (
-    <svg viewBox="0 0 360 72" className={className} fill="none" aria-label="Shutter Shots by Karan Pande">
-      {camera}
-
-      {/* Divider hairline */}
-      <line x1="92" y1="16" x2="92" y2="58" stroke="currentColor" strokeWidth="0.6" opacity="0.3" />
-
-      {/* Wordmark */}
-      <g transform="translate(106, 0)">
-        <text
-          x="0" y="38"
-          fontFamily="'Cormorant Garamond', 'Times New Roman', serif"
-          fontStyle="italic"
-          fontWeight="500"
-          fontSize="30"
-          fill="currentColor"
-          letterSpacing="0.4"
-        >Shutter Shots</text>
-        <text
-          x="3" y="58"
-          fontFamily="'Manrope', 'Helvetica Neue', sans-serif"
-          fontSize="9"
-          fill="currentColor"
-          letterSpacing="2.6"
-          fontWeight="600"
-          opacity="0.75"
-        >BY&#160;&#160;KARAN&#160;&#160;PANDE&#160;&#160;·&#160;&#160;PHOTOGRAPHY</text>
-      </g>
+    <svg viewBox="0 0 390 80" className={className} role="img" aria-label="Karan Pande Photography">
+      {mark}
+      <line x1="94" y1="10" x2="94" y2="70" stroke="currentColor" opacity=".2" />
+      <text x="112" y="42" fill="currentColor" fontFamily="'Italiana', serif" fontSize="31" letterSpacing="1.2">KARAN PANDE</text>
+      <text x="114" y="62" fill="currentColor" fontFamily="'DM Mono', monospace" fontSize="7.5" letterSpacing="2.4">WEDDINGS  /  FILMS  /  STORIES</text>
     </svg>
   );
 }
