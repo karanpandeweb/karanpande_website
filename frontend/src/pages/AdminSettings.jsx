@@ -6,6 +6,7 @@ import { toast, Toaster } from "sonner";
 import Logo from "../components/site/Logo";
 import { fetchSettings, updateSettings, uploadImage, auth, verifyAdmin } from "../lib/api";
 import { useSettings } from "../lib/settings";
+import RecoveryCodePanel from "../components/admin/RecoveryCodePanel";
 
 const FIELDS = [
   { group: "Opening frame", key: "hero_video_url", label: "Hero video URL (mp4)", full: true, placeholder: "https://…/hero.mp4" },
@@ -120,9 +121,9 @@ export default function AdminSettings() {
             <span className="eyebrow text-[color:var(--copper)] hidden md:inline">Studio Panel</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/admin" className="btn-pill border-white/25 text-white" data-testid="admin-back-media"><ArrowLeft size={12}/> Media library</Link>
-            <Link to="/" target="_blank" className="btn-pill border-white/25 text-white hidden md:inline-flex" data-testid="admin-view-site"><ExternalLink size={12}/> View site</Link>
-            <button onClick={logout} className="btn-pill border-white/25 text-white" data-testid="admin-settings-logout"><LogOut size={12}/> Logout</button>
+            <Link to="/admin" className="btn-pill on-dark" data-testid="admin-back-media"><ArrowLeft size={12}/> Media library</Link>
+            <Link to="/" target="_blank" className="btn-pill on-dark hidden md:inline-flex" data-testid="admin-view-site"><ExternalLink size={12}/> View site</Link>
+            <button onClick={logout} className="btn-pill on-dark" data-testid="admin-settings-logout"><LogOut size={12}/> Logout</button>
           </div>
         </div>
       </div>
@@ -214,6 +215,9 @@ export default function AdminSettings() {
             </div>
             <div className="mt-4 flex items-center gap-2 text-xs text-[color:var(--ink)]/55"><CheckCircle2 size={14} className="text-[color:var(--copper)]"/> Changes stay private until you press Save changes.</div>
           </section>
+
+          {/* Recovery codes save and apply on their own, not via Save changes */}
+          <RecoveryCodePanel />
 
           {/* Live hero preview */}
           <div className="md:col-span-2 border-t border-[color:var(--ink)]/10 pt-8">

@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Literal
 from datetime import datetime, timedelta, timezone
 from backend.postgres_store import PostgresStore
+from backend.admin_auth import AdminCredentialStore
 
 
 ROOT_DIR = Path(__file__).parent
@@ -41,6 +42,9 @@ login_attempts: dict[str, list[float]] = {}
 
 client = PostgresStore(DATABASE_URL)
 db = client
+# ADMIN_PASSWORD seeds the stored credential on first run; after a reset the
+# database is the source of truth and the variable is ignored.
+admin_credentials = AdminCredentialStore(db, ADMIN_USERNAME, ADMIN_PASSWORD)
 
 app = FastAPI(title="Karan Pande Photography API")
 api_router = APIRouter(prefix="/api")
@@ -188,6 +192,22 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     token: str
     username: str
+
+
+class PasswordResetRequest(BaseModel):
+    username: str
+    recovery_code: str
+    new_password: str = Field(min_length=12, max_length=200)
+
+
+class RecoveryCodeResponse(BaseModel):
+    """The plaintext code is returned exactly once, at generation."""
+    recovery_code: str
+
+
+class RecoveryStatusResponse(BaseModel):
+    has_recovery_code: bool
+    issued_at: Optional[str] = None
 
 
 class FeaturedFrame(BaseModel):
@@ -352,6 +372,9 @@ SEED_TESTIMONIALS: List[dict] = [
 
 
 async def seed_if_empty():
+    # Admin credential — hashed from the environment on first run only
+    await admin_credentials.ensure_seeded()
+
     # Media + Albums migration/seed
     album_count = await db.albums.count_documents({})
     if album_count == 0:
@@ -419,11 +442,56 @@ async def admin_login(body: LoginRequest, request: Request):
     client_key = request.client.host if request.client else "unknown"
     enforce_login_rate_limit(client_key)
     username_ok = secrets.compare_digest(body.username.encode(), ADMIN_USERNAME.encode())
-    password_ok = secrets.compare_digest(body.password.encode(), ADMIN_PASSWORD.encode())
+    password_ok = await admin_credentials.verify_password(body.password)
     if not username_ok or not password_ok:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     login_attempts.pop(client_key, None)
     return LoginResponse(token=create_token(body.username), username=body.username)
+
+
+@api_router.post("/admin/password/reset", response_model=LoginResponse)
+async def reset_admin_password(body: PasswordResetRequest, request: Request):
+    """Set a new password using the one-time recovery code.
+
+    Rate limited on the same budget as sign-in, because the recovery code
+    is the only thing standing between a guesser and the dashboard.
+    """
+    client_key = f"reset:{request.client.host if request.client else 'unknown'}"
+    enforce_login_rate_limit(client_key)
+
+    if not await admin_credentials.has_recovery_code():
+        raise HTTPException(
+            status_code=409,
+            detail="No recovery code has been generated. Sign in and create one from Site settings.",
+        )
+
+    username_ok = secrets.compare_digest(body.username.encode(), ADMIN_USERNAME.encode())
+    reset_ok = username_ok and await admin_credentials.reset_password_with_code(
+        body.recovery_code, body.new_password
+    )
+    if not reset_ok:
+        raise HTTPException(status_code=401, detail="Invalid username or recovery code")
+
+    login_attempts.pop(client_key, None)
+    logger.info("Admin password reset via recovery code")
+    return LoginResponse(token=create_token(ADMIN_USERNAME), username=ADMIN_USERNAME)
+
+
+@api_router.get("/admin/recovery-code", response_model=RecoveryStatusResponse)
+async def recovery_code_status(user: str = Depends(require_admin)):
+    credential = await admin_credentials.ensure_seeded()
+    return RecoveryStatusResponse(
+        has_recovery_code=bool(credential.get("recovery_code_hash")),
+        issued_at=credential.get("recovery_code_issued_at"),
+    )
+
+
+@api_router.post("/admin/recovery-code", response_model=RecoveryCodeResponse)
+async def create_recovery_code(user: str = Depends(require_admin)):
+    """Issue a fresh code, replacing any previous one."""
+    code = await admin_credentials.issue_recovery_code()
+    logger.info("New admin recovery code issued")
+    return RecoveryCodeResponse(recovery_code=code)
 
 
 @api_router.get("/admin/me")

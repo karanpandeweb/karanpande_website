@@ -117,13 +117,13 @@ export default function AdminDashboard() {
             <Logo className="h-10 w-auto" />
           </Link>
           <div className="flex items-center gap-2 md:gap-3">
-            <Link to="/admin/settings" className="btn-pill border-white/25 text-white hover:bg-white hover:text-[color:var(--ink)]" data-testid="admin-settings-link">
+            <Link to="/admin/settings" className="btn-pill on-dark" data-testid="admin-settings-link">
               <SettingsIcon size={12} /> Site Settings
             </Link>
-            <Link to="/" target="_blank" className="btn-pill border-white/25 text-white hover:bg-white hover:text-[color:var(--ink)] hidden sm:inline-flex" data-testid="admin-view-site">
+            <Link to="/" target="_blank" className="btn-pill on-dark hidden sm:inline-flex" data-testid="admin-view-site">
               <ExternalLink size={12} /> View site
             </Link>
-            <button onClick={logout} data-testid="admin-logout" className="btn-pill border-white/25 text-white hover:bg-white hover:text-[color:var(--ink)]">
+            <button onClick={logout} data-testid="admin-logout" className="btn-pill on-dark">
               <LogOut size={12} /> Logout
             </button>
           </div>

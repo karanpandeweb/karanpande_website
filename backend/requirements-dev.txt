@@ -1,0 +1,5 @@
+# Test-only dependencies. Kept out of requirements.txt so they are not
+# bundled into the Vercel serverless function.
+-r requirements.txt
+pytest-asyncio
+pytest-xdist

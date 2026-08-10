@@ -132,6 +132,11 @@ body {
 .btn-pill:hover { background: var(--ink); color: var(--cream); border-color: var(--ink); transform: translateY(-1px); }
 .btn-pill.filled { background: var(--copper); color: var(--cream); border-color: var(--copper); }
 .btn-pill.filled:hover { background: var(--copper-deep); border-color: var(--copper-deep); }
+/* For pills sitting on the ink top bar. `.btn-pill` is declared after
+   `@tailwind utilities`, so a `text-white` class on the element loses to
+   `color: var(--ink)` above on source order and the label goes invisible. */
+.btn-pill.on-dark { color: var(--cream); border-color: rgba(244,241,235,0.25); }
+.btn-pill.on-dark:hover { background: var(--cream); color: var(--ink); border-color: var(--cream); }
 
 /* Image reveal wrappers */
 .img-frame { position: relative; overflow: hidden; background: var(--cream-2); }
