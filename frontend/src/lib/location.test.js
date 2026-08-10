@@ -6,7 +6,8 @@ import { cityOf, countryOf, shortLocation } from "./location";
 describe("cityOf", () => {
   it("takes the first segment", () => {
     expect(cityOf("Pune, Maharashtra · India")).toBe("Pune");
-    expect(cityOf("Sambhaji Nagar, Maharashtra · India")).toBe("Sambhaji Nagar");
+    // A two-word city must survive the split, not be cut at the space.
+    expect(cityOf("Navi Mumbai, Maharashtra · India")).toBe("Navi Mumbai");
   });
 
   it("tolerates a stray space before the comma", () => {

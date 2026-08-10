@@ -234,13 +234,13 @@ class SiteSettings(BaseModel):
     hero_headline_2: str = "like your own."
     hero_subtitle: str = "Karan Pande photographs weddings, pre-wedding stories and cinematic films across India — quiet, editorial, and unhurried."
     about_photo_url: str = "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1200&q=80"
-    about_bio_1: str = "I photograph weddings, pre-wedding stories, and cinematic films out of a small studio in Sambhaji Nagar. Six years in, I'm still moved by the same three things — first looks, the last dance, and the way sunlight lands on a mother's hand."
+    about_bio_1: str = "I photograph weddings, pre-wedding stories, and cinematic films out of a small studio in Pune. Six years in, I'm still moved by the same three things — first looks, the last dance, and the way sunlight lands on a mother's hand."
     about_bio_2: str = "My work sits somewhere between documentary and editorial. I don't direct much, I don't re-shoot the vows, and I don't chase trends in colour. I photograph what actually happens — quietly, on foot, and close enough to hear you laugh."
     phone: str = "+91 98000 00000"
     whatsapp: str = "+91 98000 00000"
     email: str = "hello@karanpande.in"
     instagram: str = "karanpande"
-    location: str = "Sambhaji Nagar, Maharashtra · India"
+    location: str = "Pune, Maharashtra · India"
     featured_frames: List[FeaturedFrame] = Field(default_factory=lambda: [frame.model_copy() for frame in DEFAULT_FEATURED_FRAMES])
 
 
@@ -312,7 +312,7 @@ def _img(u):
 SEED_ALBUMS: List[dict] = [
     # Wedding
     {"category": "wedding", "name": "Aarav & Meera", "cover": "https://images.unsplash.com/photo-1630526720753-aa4e71acf67d?auto=format&fit=crop&w=1600&q=80", "location": "Udaipur, RJ", "date": "Feb 2025", "description": "A three-day royal wedding in the courtyards of Udaipur.", "order": 1},
-    {"category": "wedding", "name": "Rohan & Priya", "cover": "https://images.unsplash.com/photo-1665960213508-48f07086d49c?auto=format&fit=crop&w=1600&q=80", "location": "Sambhaji Nagar, MH", "date": "Nov 2024", "description": "A neighbourhood wedding lit only by lamps and family.", "order": 2},
+    {"category": "wedding", "name": "Rohan & Priya", "cover": "https://images.unsplash.com/photo-1665960213508-48f07086d49c?auto=format&fit=crop&w=1600&q=80", "location": "Pune, MH", "date": "Nov 2024", "description": "A neighbourhood wedding lit only by lamps and family.", "order": 2},
     {"category": "wedding", "name": "Kabir & Ananya", "cover": "https://images.pexels.com/photos/35069916/pexels-photo-35069916.jpeg?auto=compress&cs=tinysrgb&w=1600", "location": "Goa", "date": "Dec 2024", "description": "A beachside ceremony with saltwater and vermilion.", "order": 3},
     # Pre-wedding
     {"category": "pre-wedding", "name": "Ishaan & Riya", "cover": "https://images.unsplash.com/photo-1715285977619-6d9357168f46?auto=format&fit=crop&w=1600&q=80", "location": "Jaisalmer dunes", "date": "Jan 2025", "description": "A day of gold hour walks across cold desert.", "order": 1},
@@ -365,7 +365,7 @@ SEED_MEDIA_BY_ALBUM: dict = {
 
 SEED_TESTIMONIALS: List[dict] = [
     {"author": "Aarav & Meera", "role": "Wedding, Udaipur", "quote": "Karan didn't just photograph our wedding — he remembered it for us. Every image feels like the moment we lived, only softer, slower, more beautiful.", "rating": 5, "order": 1},
-    {"author": "Rohan & Priya", "role": "Wedding, Sambhaji Nagar", "quote": "We asked for honest, un-posed photographs. Karan gave us something better — a small book of our two families that we open every anniversary.", "rating": 5, "order": 2},
+    {"author": "Rohan & Priya", "role": "Wedding, Pune", "quote": "We asked for honest, un-posed photographs. Karan gave us something better — a small book of our two families that we open every anniversary.", "rating": 5, "order": 2},
     {"author": "Ishaan & Riya", "role": "Pre-Wedding, Jaisalmer", "quote": "The most patient photographer we've worked with. He waited three hours for the light to turn and it was worth every minute.", "rating": 5, "order": 3},
     {"author": "Kabir & Ananya", "role": "Wedding film, Goa", "quote": "Our film feels like a short movie of our life, not a highlights reel. Friends have watched it more than we have.", "rating": 5, "order": 4},
 ]

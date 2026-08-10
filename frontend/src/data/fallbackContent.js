@@ -30,7 +30,7 @@ export const FALLBACK_SETTINGS = {
 
 export const FALLBACK_ALBUMS = [
   { id: "w-1", category: "wedding", slug: "aarav-meera", name: "Aarav & Meera", cover: "/assets/placeholders/ai-wedding-bride.jpg", location: "Udaipur, Rajasthan", date: "February 2025", description: "Three days of music, monsoon light, and two families becoming one.", order: 1 },
-  { id: "w-2", category: "wedding", slug: "rohan-priya", name: "Rohan & Priya", cover: "https://images.unsplash.com/photo-1665960213508-48f07086d49c?auto=format&fit=crop&w=1600&q=85", location: "Sambhaji Nagar", date: "November 2024", description: "A neighbourhood wedding lit by lamps, laughter, and familiar faces.", order: 2 },
+  { id: "w-2", category: "wedding", slug: "rohan-priya", name: "Rohan & Priya", cover: "https://images.unsplash.com/photo-1665960213508-48f07086d49c?auto=format&fit=crop&w=1600&q=85", location: "Pune", date: "November 2024", description: "A neighbourhood wedding lit by lamps, laughter, and familiar faces.", order: 2 },
   { id: "w-3", category: "wedding", slug: "kabir-ananya", name: "Kabir & Ananya", cover: "https://images.pexels.com/photos/35069916/pexels-photo-35069916.jpeg?auto=compress&cs=tinysrgb&w=1600", location: "Goa", date: "December 2024", description: "Salt air, vermilion, and a ceremony by the sea.", order: 3 },
   { id: "p-1", category: "pre-wedding", slug: "ishaan-riya", name: "Ishaan & Riya", cover: "/assets/placeholders/ai-prewedding-field.jpg", location: "Jaisalmer", date: "January 2025", description: "A slow golden-hour walk across the winter dunes.", order: 1 },
   { id: "p-2", category: "pre-wedding", slug: "vikram-naina", name: "Vikram & Naina", cover: "https://images.unsplash.com/photo-1653688529238-1326ab9eeab9?auto=format&fit=crop&w=1600&q=85", location: "Coorg", date: "October 2024", description: "Coffee plantations, soft mist, and no hurry at all.", order: 2 },
@@ -71,7 +71,7 @@ export const FALLBACK_MEDIA = [
 
 export const FALLBACK_TESTIMONIALS = [
   { id: "t-1", author: "Aarav & Meera", role: "Wedding · Udaipur", quote: "Karan did not just photograph our wedding — he remembered it for us. Every image feels like the moment we lived.", rating: 5 },
-  { id: "t-2", author: "Rohan & Priya", role: "Wedding · Sambhaji Nagar", quote: "We asked for honest, unposed photographs. He gave us a small book of our two families that we open every anniversary.", rating: 5 },
+  { id: "t-2", author: "Rohan & Priya", role: "Wedding · Pune", quote: "We asked for honest, unposed photographs. He gave us a small book of our two families that we open every anniversary.", rating: 5 },
   { id: "t-3", author: "Ishaan & Riya", role: "Pre-wedding · Jaisalmer", quote: "He waited for the light to turn and made the whole day feel effortless. The photographs are completely us.", rating: 5 },
 ];
 

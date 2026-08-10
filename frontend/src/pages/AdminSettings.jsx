@@ -21,7 +21,7 @@ const FIELDS = [
   { group: "Studio details", key: "whatsapp", label: "WhatsApp number", full: false, placeholder: "+91 98765 43210" },
   { group: "Studio details", key: "email", label: "Email", full: false, placeholder: "hello@karanpande.in" },
   { group: "Studio details", key: "instagram", label: "Instagram handle (no @)", full: false, placeholder: "karanpande" },
-  { group: "Studio details", key: "location", label: "Studio location", full: true, placeholder: "Sambhaji Nagar, Maharashtra · India" },
+  { group: "Studio details", key: "location", label: "Studio location", full: true, placeholder: "Pune, Maharashtra · India" },
 ];
 
 export default function AdminSettings() {
