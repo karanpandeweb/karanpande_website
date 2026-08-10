@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Trash2, Edit3, LogOut, Image as ImageIcon, Film,
   ExternalLink, Settings as SettingsIcon, Star, Folder, FileImage,
+  AlertCircle, CheckCircle2, RefreshCw, Database,
 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import Logo from "../components/site/Logo";
@@ -11,7 +12,7 @@ import {
   fetchAllMedia, createMedia, updateMedia, deleteMedia,
   fetchAllAlbums, createAlbum, updateAlbum, deleteAlbum,
   fetchTestimonials, createTestimonial, updateTestimonial, deleteTestimonial,
-  auth, verifyAdmin,
+  auth, verifyAdmin, uploadImage,
 } from "../lib/api";
 
 const CATEGORIES = [
@@ -28,6 +29,8 @@ export default function AdminDashboard() {
   const [media, setMedia] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
   const [modal, setModal] = useState(null); // { kind, mode, item }
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -38,12 +41,15 @@ export default function AdminDashboard() {
   // eslint-disable-next-line
   }, []);
 
-  const loadAll = () => {
-    Promise.all([
-      fetchAllAlbums().then(setAlbums).catch(() => {}),
-      fetchAllMedia().then(setMedia).catch(() => {}),
-      fetchTestimonials().then(setTestimonials).catch(() => {}),
-    ]);
+  const loadAll = async () => {
+    setLoading(true);
+    setLoadError("");
+    const results = await Promise.allSettled([fetchAllAlbums(), fetchAllMedia(), fetchTestimonials()]);
+    if (results[0].status === "fulfilled") setAlbums(results[0].value);
+    if (results[1].status === "fulfilled") setMedia(results[1].value);
+    if (results[2].status === "fulfilled") setTestimonials(results[2].value);
+    if (results.some((result) => result.status === "rejected")) setLoadError("Some studio content could not be loaded. Your existing data has not been changed.");
+    setLoading(false);
   };
 
   const logout = () => { auth.clear(); nav("/admin/login"); };
@@ -59,6 +65,7 @@ export default function AdminDashboard() {
     media: media.length,
     testimonials: testimonials.length,
   };
+  const orphanedMedia = media.filter((item) => !item.album_id || !albums.some((album) => album.id === item.album_id)).length;
 
   const onSaveAlbum = async (payload, id) => {
     try {
@@ -100,23 +107,23 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[color:var(--cream)]" data-testid="admin-dashboard">
+    <div className="contact-sheet min-h-screen bg-[color:var(--cream)]" data-testid="admin-dashboard">
       <Toaster richColors position="top-center" />
 
       {/* Top bar */}
-      <div className="border-b border-[color:var(--ink)]/10 bg-[color:var(--cream)]/95 backdrop-blur">
+      <div className="border-b border-white/10 bg-[color:var(--ink)] text-[color:var(--cream)] sticky top-0 z-40">
         <div className="mx-auto max-w-[1500px] px-6 md:px-10 py-4 flex items-center justify-between">
-          <Link to="/" className="block text-[color:var(--ink)]">
+          <Link to="/" className="block text-[color:var(--cream)]">
             <Logo className="h-10 w-auto" />
           </Link>
-          <div className="flex items-center gap-3">
-            <Link to="/admin/settings" className="btn-pill" data-testid="admin-settings-link">
+          <div className="flex items-center gap-2 md:gap-3">
+            <Link to="/admin/settings" className="btn-pill border-white/25 text-white hover:bg-white hover:text-[color:var(--ink)]" data-testid="admin-settings-link">
               <SettingsIcon size={12} /> Site Settings
             </Link>
-            <Link to="/" target="_blank" className="btn-pill" data-testid="admin-view-site">
+            <Link to="/" target="_blank" className="btn-pill border-white/25 text-white hover:bg-white hover:text-[color:var(--ink)] hidden sm:inline-flex" data-testid="admin-view-site">
               <ExternalLink size={12} /> View site
             </Link>
-            <button onClick={logout} data-testid="admin-logout" className="btn-pill">
+            <button onClick={logout} data-testid="admin-logout" className="btn-pill border-white/25 text-white hover:bg-white hover:text-[color:var(--ink)]">
               <LogOut size={12} /> Logout
             </button>
           </div>
@@ -124,16 +131,35 @@ export default function AdminDashboard() {
       </div>
 
       <div className="mx-auto max-w-[1500px] px-6 md:px-10 py-10">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 bg-[color:var(--surface)] border border-[color:var(--ink)]/10 p-6 md:p-8">
           <div>
-            <div className="eyebrow">Studio Panel</div>
-            <h1 className="font-serif italic text-5xl md:text-6xl mt-2">Your library.</h1>
+            <div className="eyebrow">Studio operating system · Archive 01</div>
+            <h1 className="font-serif text-5xl md:text-6xl mt-3">The contact sheet.</h1>
+            <p className="mt-3 text-sm text-[color:var(--ink)]/60 max-w-xl">Curate albums, sequence photographs, publish films, and keep every public-facing detail in focus.</p>
           </div>
-          <div className="grid grid-cols-3 gap-3 md:gap-4">
-            <SectionCard active={section === "albums"} onClick={() => setSection("albums")} icon={Folder} label="Albums" count={counts.albums} testid="section-albums" />
-            <SectionCard active={section === "media"} onClick={() => setSection("media")} icon={FileImage} label="Media" count={counts.media} testid="section-media" />
-            <SectionCard active={section === "testimonials"} onClick={() => setSection("testimonials")} icon={Star} label="Testimonials" count={counts.testimonials} testid="section-testimonials" />
+          <div className="grid grid-cols-3 gap-2 md:gap-4 min-w-0 lg:min-w-[520px]">
+            <SectionCard active={section === "albums"} onClick={() => setSection("albums")} icon={Folder} label="Stories" count={counts.albums} testid="section-albums" />
+            <SectionCard active={section === "media"} onClick={() => setSection("media")} icon={FileImage} label="Photos & films" count={counts.media} testid="section-media" />
+            <SectionCard active={section === "testimonials"} onClick={() => setSection("testimonials")} icon={Star} label="Client notes" count={counts.testimonials} testid="section-testimonials" />
           </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 bg-[color:var(--ink)] text-[color:var(--cream)]">
+          <StudioMetric icon={loading ? RefreshCw : CheckCircle2} label="API status" value={loading ? "Syncing" : loadError ? "Attention" : "In sync"} spin={loading} />
+          <StudioMetric icon={Database} label="Published frames" value={String(media.length).padStart(2, "0")} />
+          <StudioMetric icon={Folder} label="Story folders" value={String(albums.length).padStart(2, "0")} />
+          <StudioMetric icon={orphanedMedia ? AlertCircle : CheckCircle2} label="Unassigned media" value={String(orphanedMedia).padStart(2, "0")} alert={orphanedMedia > 0} />
+        </div>
+
+        {loadError && (
+          <div className="mt-4 border border-[color:var(--copper)]/40 bg-[color:var(--surface)] p-4 flex items-center justify-between gap-4" role="alert">
+            <span className="text-sm flex items-center gap-3"><AlertCircle size={17} className="text-[color:var(--copper)]" />{loadError}</span>
+            <button onClick={loadAll} className="btn-pill"><RefreshCw size={12}/> Retry</button>
+          </div>
+        )}
+
+        <div className="mt-6 grid md:grid-cols-3 border border-[color:var(--ink)]/10 bg-[color:var(--surface)]">
+          {["Create a story folder", "Upload photographs into it", "Preview the site and publish"].map((step, index) => <div key={step} className="p-4 md:p-5 border-b md:border-b-0 md:border-r last:border-0 border-[color:var(--ink)]/10 flex gap-3"><span className="font-mono text-[color:var(--copper)] text-xs">0{index + 1}</span><span className="text-sm">{step}</span></div>)}
         </div>
 
         {/* Category tab bar (only for albums / media) */}
@@ -164,7 +190,7 @@ export default function AdminDashboard() {
                 data-testid="add-album-btn"
                 className="btn-pill filled"
               >
-                <Plus size={14} /> New Album
+                <Plus size={14} /> Create story
               </button>
             </div>
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -172,11 +198,11 @@ export default function AdminDashboard() {
                 <motion.div
                   key={a.id}
                   initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                  className="border border-[color:var(--ink)]/10 bg-[color:var(--surface)] overflow-hidden"
+                  className="admin-content-card border border-[color:var(--ink)]/10 bg-[color:var(--surface)] overflow-hidden"
                   data-testid={`album-row-${a.slug}`}
                 >
                   <div className="aspect-[4/3] bg-[color:var(--cream-2)] overflow-hidden">
-                    {a.cover && <img src={a.cover} alt={a.name} className="w-full h-full object-cover" />}
+                    {a.cover && <img src={a.cover} alt={a.name} className="w-full h-full" style={{ objectFit: a.cover_fit || "cover", objectPosition: a.cover_position || "center" }} />}
                   </div>
                   <div className="p-4">
                     <div className="font-serif italic text-2xl">{a.name}</div>
@@ -233,24 +259,24 @@ export default function AdminDashboard() {
                 data-testid="add-media-btn"
                 className="btn-pill filled"
               >
-                <Plus size={14} /> Add {tab === "cinematic" ? "Video" : "Image"}
+                <Plus size={14} /> Add {tab === "cinematic" ? "film" : "photograph"}
               </button>
             </div>
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {mediaByCategory.map((it) => (
                 <motion.div key={it.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                  className="border border-[color:var(--ink)]/10 bg-[color:var(--surface)] overflow-hidden"
+                  className="admin-content-card border border-[color:var(--ink)]/10 bg-[color:var(--surface)] overflow-hidden"
                   data-testid={`media-item-${it.id}`}
                 >
                   <div className="aspect-[4/3] bg-[color:var(--cream-2)] relative overflow-hidden">
                     {it.kind === "video" ? (
                       <>
-                        {it.poster && <img src={it.poster} alt={it.title} className="w-full h-full object-cover" />}
+                        {it.poster && <img src={it.poster} alt={it.title} className="w-full h-full" style={{ objectFit: it.fit || "cover", objectPosition: it.position || "center" }} />}
                         <div className="absolute top-3 left-3 bg-[color:var(--copper)] text-[color:var(--cream)] text-[10px] tracking-[0.2em] uppercase px-2 py-1 flex items-center gap-1"><Film size={12}/>Video</div>
                       </>
                     ) : (
                       <>
-                        <img src={it.url} alt={it.title} className="w-full h-full object-cover" />
+                        <img src={it.url} alt={it.title} className="w-full h-full" style={{ objectFit: it.fit || "cover", objectPosition: it.position || "center" }} />
                         <div className="absolute top-3 left-3 bg-[color:var(--sage-deep)] text-[color:var(--cream)] text-[10px] tracking-[0.2em] uppercase px-2 py-1 flex items-center gap-1"><ImageIcon size={12}/>Image</div>
                       </>
                     )}
@@ -347,7 +373,7 @@ function SectionCard({ active, onClick, icon: Icon, label, count, testid }) {
     <button
       onClick={onClick}
       data-testid={testid}
-      className={`text-left border p-4 transition-colors ${
+      className={`text-left border p-3 md:p-4 transition-colors min-w-0 ${
         active
           ? "border-[color:var(--copper)] bg-[color:var(--surface)]"
           : "border-[color:var(--ink)]/10 hover:border-[color:var(--ink)]/30"
@@ -359,6 +385,18 @@ function SectionCard({ active, onClick, icon: Icon, label, count, testid }) {
       </div>
       <div className="font-serif text-4xl mt-1">{count}</div>
     </button>
+  );
+}
+
+function StudioMetric({ icon: Icon, label, value, spin = false, alert = false }) {
+  return (
+    <div className="p-4 md:p-5 border-r border-b lg:border-b-0 border-white/10 last:border-r-0">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[9px] md:text-[10px] font-mono tracking-wider uppercase text-white/55">{label}</span>
+        <Icon size={14} className={`${alert ? "text-[color:var(--copper)]" : "text-white/45"} ${spin ? "animate-spin" : ""}`} />
+      </div>
+      <div className={`font-serif text-2xl md:text-3xl mt-2 ${alert ? "text-[color:var(--copper)]" : ""}`}>{value}</div>
+    </div>
   );
 }
 
@@ -401,6 +439,8 @@ function AlbumModal({ initial, mode, onCancel, onSave }) {
     location: initial.location || "",
     date: initial.date || "",
     order: initial.order || 0,
+    cover_fit: initial.cover_fit || "cover",
+    cover_position: initial.cover_position || "center",
   });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -410,6 +450,11 @@ function AlbumModal({ initial, mode, onCancel, onSave }) {
       <h3 className="font-serif italic text-3xl mt-1">{form.name || "Untitled album"}</h3>
 
       <div className="grid grid-cols-2 gap-4 mt-6">
+        {form.cover && (
+          <div className="col-span-2 aspect-[16/7] overflow-hidden bg-[color:var(--cream-2)] border border-[color:var(--ink)]/10">
+            <img src={form.cover} alt="Album cover preview" className="w-full h-full" style={{ objectFit: form.cover_fit, objectPosition: form.cover_position }} />
+          </div>
+        )}
         <Field label="Category">
           <select value={form.category} onChange={(e) => set("category", e.target.value)} data-testid="album-modal-category" className="input">
             <option value="wedding">Wedding</option>
@@ -425,6 +470,13 @@ function AlbumModal({ initial, mode, onCancel, onSave }) {
         </Field>
         <Field label="Cover image URL" full>
           <input value={form.cover} onChange={(e) => set("cover", e.target.value)} data-testid="album-modal-cover" className="input" placeholder="https://…" />
+          <UploadPicker onUploaded={(url) => set("cover", url)} label="Choose cover from device" />
+        </Field>
+        <Field label="How should the cover fit?">
+          <select value={form.cover_fit} onChange={(e) => set("cover_fit", e.target.value)} className="input"><option value="cover">Fill the frame</option><option value="contain">Show the whole photo</option></select>
+        </Field>
+        <Field label="Where is the subject?">
+          <select value={form.cover_position} onChange={(e) => set("cover_position", e.target.value)} disabled={form.cover_fit === "contain"} className="input disabled:opacity-40"><option value="center">Center</option><option value="top">Near the top</option><option value="bottom">Near the bottom</option><option value="left">On the left</option><option value="right">On the right</option></select>
         </Field>
         <Field label="Location">
           <input value={form.location} onChange={(e) => set("location", e.target.value)} data-testid="album-modal-location" className="input" placeholder="Udaipur, RJ" />
@@ -460,6 +512,8 @@ function MediaModal({ initial, mode, albumOptions, onCancel, onSave }) {
     caption: initial.caption || "",
     order: initial.order || 0,
     album_id: initial.album_id || (albumOptions[0]?.id || ""),
+    fit: initial.fit || "cover",
+    position: initial.position || "center",
   });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -469,6 +523,12 @@ function MediaModal({ initial, mode, albumOptions, onCancel, onSave }) {
       <h3 className="font-serif italic text-3xl mt-1">{form.title || "Untitled item"}</h3>
 
       <div className="grid grid-cols-2 gap-4 mt-6">
+        {(form.kind === "image" ? form.url : form.poster) && (
+          <div className="col-span-2 relative aspect-video overflow-hidden bg-[color:var(--ink)]">
+            <img src={form.kind === "image" ? form.url : form.poster} alt="Media preview" className="w-full h-full" style={{ objectFit: form.fit, objectPosition: form.position }} />
+            <span className="absolute top-3 left-3 bg-[color:var(--copper)] text-white text-[9px] font-mono tracking-wider uppercase px-2 py-1">Live preview</span>
+          </div>
+        )}
         <Field label="Category">
           <select value={form.category} onChange={(e) => set("category", e.target.value)} data-testid="modal-category" className="input">
             <option value="wedding">Wedding</option>
@@ -490,12 +550,20 @@ function MediaModal({ initial, mode, albumOptions, onCancel, onSave }) {
         </Field>
         <Field label="Media URL" full>
           <input value={form.url} onChange={(e) => set("url", e.target.value)} required data-testid="modal-url" className="input" placeholder="https://…" />
+          {form.kind === "image" && <UploadPicker onUploaded={(url) => set("url", url)} label="Choose photograph from device" />}
         </Field>
         {form.kind === "video" && (
           <Field label="Poster (thumbnail URL)" full>
             <input value={form.poster} onChange={(e) => set("poster", e.target.value)} data-testid="modal-poster" className="input" placeholder="https://…" />
+            <UploadPicker onUploaded={(url) => set("poster", url)} label="Choose film cover from device" />
           </Field>
         )}
+        <Field label="How should it fit?">
+          <select value={form.fit} onChange={(e) => set("fit", e.target.value)} className="input"><option value="cover">Fill the frame</option><option value="contain">Show the whole photo</option></select>
+        </Field>
+        <Field label="Where is the subject?">
+          <select value={form.position} onChange={(e) => set("position", e.target.value)} disabled={form.fit === "contain"} className="input disabled:opacity-40"><option value="center">Center</option><option value="top">Near the top</option><option value="bottom">Near the bottom</option><option value="left">On the left</option><option value="right">On the right</option></select>
+        </Field>
         <Field label="Title" full>
           <input value={form.title} onChange={(e) => set("title", e.target.value)} data-testid="modal-title" className="input" />
         </Field>
@@ -512,6 +580,33 @@ function MediaModal({ initial, mode, albumOptions, onCancel, onSave }) {
         <button type="button" onClick={() => onSave(form, mode === "edit" ? initial.id : null)} data-testid="modal-save" className="btn-pill filled">Save</button>
       </div>
     </ModalShell>
+  );
+}
+
+function UploadPicker({ onUploaded, label }) {
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const choose = async (file) => {
+    if (!file) return;
+    setUploading(true); setProgress(0);
+    try {
+      onUploaded(await uploadImage(file, setProgress));
+      toast.success("Photograph uploaded");
+    } catch (error) {
+      toast.error(error?.response?.data?.detail || "Upload failed");
+    } finally {
+      setUploading(false); setProgress(0);
+    }
+  };
+
+  return (
+    <label className="mt-3 upload-dropzone min-h-[6rem]">
+      {uploading ? <RefreshCw size={18} className="animate-spin" /> : <ImageIcon size={18} />}
+      <span className="text-sm font-medium">{uploading ? `Uploading ${progress}%` : label}</span>
+      <span className="text-[10px] text-[color:var(--ink)]/50">JPG, PNG or WebP · maximum 12 MB</span>
+      <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} className="sr-only" onChange={(event) => choose(event.target.files?.[0])} />
+    </label>
   );
 }
 

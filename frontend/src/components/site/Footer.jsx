@@ -15,12 +15,12 @@ export default function Footer() {
               <Logo className="h-14 md:h-16 w-auto" />
             </Link>
             <p className="mt-8 font-serif italic text-3xl md:text-4xl max-w-md leading-[1.15]">
-              Weddings, pre-wedding stories &amp; cinematic films — held like heirlooms.
+              Observed quietly. Developed honestly. Kept for a lifetime.
             </p>
           </div>
 
           <div className="md:col-span-3">
-            <div className="eyebrow text-[color:var(--copper)]">Navigate</div>
+            <div className="eyebrow text-[color:var(--copper)]">Contact sheets</div>
             <ul className="mt-4 space-y-2 text-sm">
               <li><Link to="/wedding" className="hover:text-[color:var(--copper)]">Weddings</Link></li>
               <li><Link to="/pre-wedding" className="hover:text-[color:var(--copper)]">Pre-Wedding</Link></li>
@@ -30,7 +30,7 @@ export default function Footer() {
           </div>
 
           <div className="md:col-span-4">
-            <div className="eyebrow text-[color:var(--copper)]">Reach out</div>
+            <div className="eyebrow text-[color:var(--copper)]">Commission a story</div>
             <ul className="mt-4 space-y-3 text-sm">
               <li className="flex items-center gap-3"><Phone size={14} /> {s.phone || "+91 98000 00000"}</li>
               <li className="flex items-center gap-3"><Mail size={14} /> {s.email || "hello@karanpande.in"}</li>

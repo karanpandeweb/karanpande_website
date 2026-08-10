@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { fetchSettings } from "../lib/api";
+import { FALLBACK_SETTINGS } from "../data/fallbackContent";
 
 const SettingsContext = createContext({
   settings: null,
@@ -7,13 +8,15 @@ const SettingsContext = createContext({
 });
 
 export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState(null);
+  const [settings, setSettings] = useState(FALLBACK_SETTINGS);
 
   const refresh = useCallback(async () => {
     try {
       const s = await fetchSettings();
       setSettings(s);
-    } catch {}
+    } catch {
+      setSettings(FALLBACK_SETTINGS);
+    }
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);

@@ -26,29 +26,37 @@ export default function Nav() {
 
   useEffect(() => setOpen(false), [loc.pathname]);
 
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    const onKey = (event) => event.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = ""; window.removeEventListener("keydown", onKey); };
+  }, [open]);
+
   const isHome = loc.pathname === "/";
   const onDark = isHome && !scrolled;
   const brandColor = onDark ? "var(--cream)" : "var(--ink)";
 
   return (
     <>
+      <a href="#main-content" className="sr-only focus:not-sr-only fixed top-3 left-3 z-[100] bg-[color:var(--cream)] text-[color:var(--ink)] px-4 py-2">Skip to content</a>
       <motion.header
         initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 1.1, delay: 0.35, ease: [0.2, 0.8, 0.2, 1] }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-500 ${
-          scrolled
+        className={`fixed top-0 left-0 right-0 z-[60] transition-colors duration-500 ${
+          open ? "bg-[color:var(--ink)]" : scrolled
             ? "bg-[color:var(--cream)]/90 backdrop-blur-md border-b border-[color:var(--ink)]/10"
             : "bg-transparent"
         }`}
         data-testid="site-nav"
       >
-        <div className="mx-auto max-w-[1500px] px-6 md:px-10 py-4 flex items-center justify-between">
-          <Link to="/" data-testid="nav-logo" className="block" style={{ color: brandColor }}>
+        <div className="mx-auto max-w-[1600px] px-6 md:px-10 py-4 flex items-center justify-between">
+          <Link to="/" data-testid="nav-logo" className="block" style={{ color: open ? "var(--cream)" : brandColor }}>
             <Logo className="h-9 md:h-11 w-auto" />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-7 xl:gap-10 border-l pl-8" style={{ borderColor: onDark ? "rgba(242,238,229,.22)" : "rgba(23,23,20,.16)" }} aria-label="Primary navigation">
             {links.map((l) => (
               <NavLink
                 key={l.to}
@@ -67,16 +75,19 @@ export default function Nav() {
           </nav>
 
           <div className="hidden lg:flex items-center gap-3">
-            <span className={`text-[10px] tracking-[0.28em] uppercase ${onDark ? "text-[color:var(--cream)]/80" : "text-[color:var(--ink)]/60"}`}>
+            <span className="text-[10px] tracking-[0.28em] uppercase" style={{ color: onDark ? "rgba(242,238,229,.8)" : "rgba(23,23,20,.6)" }}>
               Sambhaji Nagar · IN
             </span>
           </div>
 
           <button
-            className={`md:hidden ${onDark ? "text-[color:var(--cream)]" : "text-[color:var(--ink)]"}`}
+            className="md:hidden"
+            style={{ color: open || onDark ? "var(--cream)" : "var(--ink)" }}
             onClick={() => setOpen((s) => !s)}
             data-testid="nav-menu-toggle"
-            aria-label="menu"
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            aria-controls="mobile-navigation"
           >
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -89,16 +100,17 @@ export default function Nav() {
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="fixed top-[68px] left-0 right-0 z-40 bg-[color:var(--cream)] border-b border-[color:var(--ink)]/10 md:hidden"
+            id="mobile-navigation"
+            className="fixed inset-0 z-50 bg-[color:var(--ink)] text-[color:var(--cream)] md:hidden pt-24"
           >
-            <div className="px-6 py-6 flex flex-col gap-4">
+            <div className="px-7 py-8 flex flex-col gap-3">
               {links.map((l) => (
                 <NavLink
                   key={l.to}
                   to={l.to}
                   end={l.to === "/"}
                   data-testid={`nav-mobile-${l.label.toLowerCase()}`}
-                  className="font-serif italic text-3xl text-[color:var(--ink)]"
+                  className="font-serif text-5xl text-[color:var(--cream)] border-b border-[color:var(--cream)]/15 py-3"
                 >
                   {l.label}
                 </NavLink>

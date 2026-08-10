@@ -13,16 +13,16 @@ export default function Contact() {
   const email = s.email || "";
   const ig = (s.instagram || "").replace(/^@/, "");
   const contacts = [
-    { icon: Phone, label: "Phone", value: phone || "—", href: `tel:${digits(phone)}`, testid: "contact-phone" },
-    { icon: MessageCircle, label: "WhatsApp", value: "Chat on WhatsApp", href: `https://wa.me/${wa}`, testid: "contact-whatsapp" },
-    { icon: Mail, label: "Email", value: email || "—", href: `mailto:${email}`, testid: "contact-email" },
-    { icon: Instagram, label: "Instagram", value: `@${ig || "—"}`, href: `https://instagram.com/${ig}`, testid: "contact-instagram" },
-  ];
+    phone && { icon: Phone, label: "Phone", value: phone, href: `tel:+${digits(phone)}`, testid: "contact-phone" },
+    wa && { icon: MessageCircle, label: "WhatsApp", value: "Chat on WhatsApp", href: `https://wa.me/${wa}`, testid: "contact-whatsapp" },
+    email && { icon: Mail, label: "Email", value: email, href: `mailto:${email}`, testid: "contact-email" },
+    ig && { icon: Instagram, label: "Instagram", value: `@${ig}`, href: `https://instagram.com/${ig}`, testid: "contact-instagram" },
+  ].filter(Boolean);
 
   return (
     <div className="pt-28 md:pt-40 pb-24 md:pb-32" data-testid="contact-page">
       <section className="mx-auto max-w-[1400px] px-5 md:px-10">
-        <div className="eyebrow">Chapter 04 · The Enquiry</div>
+        <div className="eyebrow">Chapter 04 · Bookings &amp; commissions</div>
         <RevealHeading
           lines={["Let's talk about", "your wedding."]}
           className="font-serif italic text-[color:var(--ink)] leading-[0.9] mt-5 md:mt-6 tracking-tight block"

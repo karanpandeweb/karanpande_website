@@ -13,6 +13,14 @@ api.interceptors.request.use((cfg) => {
   return cfg;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && error?.config?.url?.startsWith("/admin/")) auth.clear();
+    return Promise.reject(error);
+  }
+);
+
 export const auth = {
   setToken: (t) => localStorage.setItem(TOKEN_KEY, t),
   getToken: () => localStorage.getItem(TOKEN_KEY),
@@ -50,6 +58,53 @@ export const deleteTestimonial = (id) => api.delete(`/admin/testimonials/${id}`)
 // Settings
 export const fetchSettings = () => api.get(`/settings`).then((r) => r.data);
 export const updateSettings = (payload) => api.put(`/admin/settings`, payload).then((r) => r.data);
+
+async function optimizeImageForUpload(file) {
+  if (!file?.type?.startsWith("image/") || file.size <= 3.5 * 1024 * 1024) return file;
+
+  const sourceUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = () => reject(new Error("This photograph could not be prepared for upload."));
+      element.src = sourceUrl;
+    });
+
+    const maxEdge = 2400;
+    const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    let quality = 0.88;
+    let blob;
+    do {
+      blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+      quality -= 0.1;
+    } while (blob && blob.size > 3.5 * 1024 * 1024 && quality >= 0.48);
+
+    if (!blob) throw new Error("This browser could not prepare the photograph for upload.");
+    const name = file.name.replace(/\.[^.]+$/, "") || "photograph";
+    return new File([blob], `${name}.webp`, { type: "image/webp" });
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
+export async function uploadImage(file, onProgress) {
+  const optimizedFile = await optimizeImageForUpload(file);
+  const body = new FormData();
+  body.append("file", optimizedFile);
+  const { data } = await api.post("/admin/upload", body, {
+    headers: { "Content-Type": "multipart/form-data" },
+    onUploadProgress: (event) => {
+      if (event.total && onProgress) onProgress(Math.round((event.loaded / event.total) * 100));
+    },
+  });
+  return data.url.startsWith("http") ? data.url : `${BACKEND_URL}${data.url}`;
+}
 
 export async function verifyAdmin() {
   try {

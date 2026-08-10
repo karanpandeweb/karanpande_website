@@ -7,4 +7,3 @@ PyJWT
 cryptography
 python-multipart
 requests
-pytest
