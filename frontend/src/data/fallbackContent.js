@@ -7,13 +7,18 @@ export const FALLBACK_SETTINGS = {
   hero_headline_2: "like your own.",
   hero_subtitle: "Wedding photographs and films made with instinct, intimacy and an eye for everything happening between the big moments.",
   about_photo_url: "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1400&q=85",
-  about_bio_1: "I photograph weddings, pre-wedding stories, and cinematic films from Sambhaji Nagar. Six years in, I am still drawn to the unscripted things: a nervous hand, a sudden laugh, light moving across a crowded room.",
+  // Deliberately names no city — the studio location lives in `location`
+  // below, and prose that repeats it would contradict the CMS the moment
+  // the location changes.
+  about_bio_1: "I photograph weddings, pre-wedding stories, and cinematic films. Years in, I am still drawn to the unscripted things: a nervous hand, a sudden laugh, light moving across a crowded room.",
   about_bio_2: "The work lives between documentary and editorial. I give each story room to breathe, then shape it with honest colour, deliberate sequencing, and a sense of place.",
   phone: "+91 98000 00000",
   whatsapp: "+91 98000 00000",
   email: "hello@karanpande.in",
   instagram: "karanpande",
-  location: "Sambhaji Nagar, Maharashtra · India",
+  // Shown only while the API is unreachable. Keep in step with the studio
+  // location in Site settings so an outage cannot display a stale city.
+  location: "Pune, Maharashtra · India",
   featured_frames: [
     { url: "/assets/placeholders/ai-wedding-bride.jpg", title: "Before the vows" },
     { url: "/assets/placeholders/ai-prewedding-field.jpg", title: "Blue hour" },

@@ -2,6 +2,7 @@ import { Instagram, Phone, Mail, MessageCircle } from "lucide-react";
 import RevealHeading from "../components/site/RevealHeading";
 import { FadeUp } from "../components/site/Reveal";
 import { useSettings } from "../lib/settings";
+import { FALLBACK_SETTINGS } from "../data/fallbackContent";
 
 function digits(s = "") { return s.replace(/[^\d]/g, ""); }
 
@@ -69,7 +70,7 @@ export default function Contact() {
           <div className="border-t border-[color:var(--sage-deep)]/15 pt-10 bg-[color:var(--sage-soft)] p-8 md:p-12 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <div className="eyebrow">Studio</div>
-              <p className="mt-3 font-serif text-2xl text-[color:var(--sage-deep)]">{s.location || "Sambhaji Nagar, Maharashtra · India"}</p>
+              <p className="mt-3 font-serif text-2xl text-[color:var(--sage-deep)]">{s.location || FALLBACK_SETTINGS.location}</p>
             </div>
             <div>
               <div className="eyebrow">Available for</div>

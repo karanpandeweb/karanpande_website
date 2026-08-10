@@ -2,10 +2,12 @@ import { Link } from "react-router-dom";
 import { Instagram, Phone, Mail } from "lucide-react";
 import Logo from "./Logo";
 import { useSettings } from "../../lib/settings";
+import { cityOf } from "../../lib/location";
 
 export default function Footer() {
   const { settings } = useSettings();
   const s = settings || {};
+  const studioCity = cityOf(s.location);
   return (
     <footer className="bg-[color:var(--sage-deep)] text-[color:var(--cream)] pt-24 pb-10" data-testid="site-footer">
       <div className="mx-auto max-w-[1500px] px-6 md:px-10">
@@ -48,7 +50,7 @@ export default function Footer() {
 
         <div className="mt-16 border-t border-[color:var(--cream)]/15 pt-6 flex flex-col md:flex-row justify-between text-[10px] tracking-[0.3em] uppercase text-[color:var(--cream)]/60">
           <span>© {new Date().getFullYear()} Shutter Shots by KP · All rights reserved</span>
-          <span>Est. 2019 · Sambhaji Nagar</span>
+          <span>Est. 2019{studioCity ? ` · ${studioCity}` : ""}</span>
         </div>
       </div>
     </footer>

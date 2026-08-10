@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import Logo from "./Logo";
+import { useSettings } from "../../lib/settings";
+import { shortLocation } from "../../lib/location";
 
 const links = [
   { to: "/", label: "Index" },
@@ -16,6 +18,8 @@ export default function Nav() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const loc = useLocation();
+  const { settings } = useSettings();
+  const studioLocation = shortLocation(settings?.location);
 
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 40);
@@ -74,11 +78,13 @@ export default function Nav() {
             ))}
           </nav>
 
-          <div className="hidden lg:flex items-center gap-3">
-            <span className="text-[10px] tracking-[0.28em] uppercase" style={{ color: onDark ? "rgba(242,238,229,.8)" : "rgba(23,23,20,.6)" }}>
-              Sambhaji Nagar · IN
-            </span>
-          </div>
+          {studioLocation && (
+            <div className="hidden lg:flex items-center gap-3">
+              <span className="text-[10px] tracking-[0.28em] uppercase" style={{ color: onDark ? "rgba(242,238,229,.8)" : "rgba(23,23,20,.6)" }}>
+                {studioLocation}
+              </span>
+            </div>
+          )}
 
           <button
             className="md:hidden"

@@ -9,6 +9,7 @@ import RevealHeading from "../components/site/RevealHeading";
 import { FadeUp } from "../components/site/Reveal";
 import { fetchAllAlbums, fetchAllMedia, fetchTestimonials } from "../lib/api";
 import { useSettings } from "../lib/settings";
+import { cityOf } from "../lib/location";
 import { FALLBACK_ALBUMS, FALLBACK_MEDIA, FALLBACK_TESTIMONIALS } from "../data/fallbackContent";
 
 const CHAPTERS = [
@@ -201,6 +202,7 @@ export default function Home() {
   const [testimonials, setTestimonials] = useState(FALLBACK_TESTIMONIALS);
   const [videoFailed, setVideoFailed] = useState(false);
   const { settings } = useSettings();
+  const studioCity = cityOf(settings?.location);
 
   useEffect(() => {
     fetchAllAlbums().then((items) => items.length && setAlbums(items)).catch(() => {});
@@ -291,7 +293,7 @@ export default function Home() {
 
       <div className="story-ticker" aria-hidden="true">
         <div className="story-ticker__track">
-          {[...Array(2)].flatMap((_, pass) => ["Weddings", "Pre-wedding", "Cinematic films", "Sambhaji Nagar", "Available worldwide"].map((label) => <span key={`${pass}-${label}`}>{label}</span>))}
+          {[...Array(2)].flatMap((_, pass) => ["Weddings", "Pre-wedding", "Cinematic films", studioCity, "Available worldwide"].filter(Boolean).map((label) => <span key={`${pass}-${label}`}>{label}</span>))}
         </div>
       </div>
 
@@ -442,7 +444,7 @@ export default function Home() {
               &ldquo;A good wedding photograph isn&rsquo;t the biggest moment —
               it&rsquo;s the second right after it, when nobody&rsquo;s watching.&rdquo;
             </p>
-            <div className="mt-6 eyebrow text-[color:var(--cream)]/70">— From a notebook, Sambhaji Nagar, 2024</div>
+            <div className="mt-6 eyebrow text-[color:var(--cream)]/70">— From a notebook{studioCity ? `, ${studioCity}` : ""}, 2024</div>
           </div>
         </div>
       </section>
