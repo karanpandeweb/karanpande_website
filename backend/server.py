@@ -1,10 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, UploadFile, File
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, Response
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
 import os
+import sys
 import re
 import logging
 import uuid
@@ -12,14 +7,32 @@ import jwt
 import secrets
 import time
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Literal
 from datetime import datetime, timedelta, timezone
-from backend.postgres_store import PostgresStore
-from backend.admin_auth import AdminCredentialStore
 
+# Add project root and backend dir to sys.path so imports work in any Vercel execution mode
+_current_dir = Path(__file__).resolve().parent
+_root_dir = _current_dir.parent
+for _p in [str(_root_dir), str(_current_dir)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-ROOT_DIR = Path(__file__).parent
+try:
+    from backend.postgres_store import PostgresStore
+    from backend.admin_auth import AdminCredentialStore
+except (ImportError, ModuleNotFoundError):
+    from postgres_store import PostgresStore
+    from admin_auth import AdminCredentialStore
+
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, UploadFile, File
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, Response
+from dotenv import load_dotenv
+from starlette.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field, ConfigDict
+
+ROOT_DIR = _current_dir
 load_dotenv(ROOT_DIR / ".env")
 
 
