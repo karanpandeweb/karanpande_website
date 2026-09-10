@@ -27,7 +27,7 @@ except (ImportError, ModuleNotFoundError):
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
@@ -63,6 +63,21 @@ security = HTTPBearer(auto_error=False)
 
 logger = logging.getLogger("kp")
 logging.basicConfig(level=logging.INFO)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    logger.exception("Unhandled error on %s %s: %s", request.method, request.url.path, exc)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Server error",
+            "exception_type": type(exc).__name__,
+            "exception_message": str(exc),
+            "traceback": traceback.format_exc().splitlines(),
+        },
+    )
 
 
 # ---------- Types ----------
