@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm --prefix frontend run build",
-  "installCommand": "npm --prefix frontend ci --legacy-peer-deps",
+  "installCommand": "uv sync --frozen --no-dev && npm --prefix frontend ci --legacy-peer-deps",
   "outputDirectory": "frontend/build",
   "rewrites": [
     {
