@@ -5,11 +5,23 @@
   "outputDirectory": "frontend/build",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/index.py"
+      "source": "/wedding/:path*",
+      "destination": "/index.html"
     },
     {
-      "source": "/:path*",
+      "source": "/pre-wedding/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cinematic/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/:path*",
       "destination": "/index.html"
     }
   ],
