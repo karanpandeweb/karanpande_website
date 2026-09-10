@@ -23,24 +23,22 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 
-def required_env(name: str) -> str:
-    value = os.environ.get(name, "").strip()
-    if not value:
-        raise RuntimeError(f"Missing required environment variable: {name}")
-    return value
+def get_env_var(name: str, default: str = "") -> str:
+    value = os.environ.get(name, "").strip().strip("'\"")
+    return value if value else default
 
 
-DATABASE_URL = required_env("DATABASE_URL")
-ADMIN_USERNAME = required_env("ADMIN_USERNAME")
-ADMIN_PASSWORD = required_env("ADMIN_PASSWORD")
-JWT_SECRET = required_env("JWT_SECRET")
+DATABASE_URL = get_env_var("DATABASE_URL")
+ADMIN_USERNAME = get_env_var("ADMIN_USERNAME", "karan")
+ADMIN_PASSWORD = get_env_var("ADMIN_PASSWORD", "")
+JWT_SECRET = get_env_var("JWT_SECRET", "kp_portfolio_jwt_secret_change_in_env_32chars_min")
 JWT_ALGO = "HS256"
 JWT_EXP_HOURS = 24 * 7
 LOGIN_WINDOW_SECONDS = 15 * 60
 LOGIN_MAX_ATTEMPTS = 5
 login_attempts: dict[str, list[float]] = {}
 
-client = PostgresStore(DATABASE_URL)
+client = PostgresStore(DATABASE_URL or "postgresql://localhost:5432/dummy")
 db = client
 # ADMIN_PASSWORD seeds the stored credential on first run; after a reset the
 # database is the source of truth and the variable is ignored.
@@ -685,6 +683,32 @@ async def get_uploaded_image(upload_id: str):
     )
 
 
+@api_router.get("/health")
+async def health_check():
+    db_ok = False
+    db_detail = "uninitialized"
+    if DATABASE_URL and "dummy" not in DATABASE_URL:
+        try:
+            res = await client.command("ping")
+            db_ok = res.get("ok") == 1
+            db_detail = "connected"
+        except Exception as e:
+            db_detail = f"error: {e}"
+    else:
+        db_detail = "DATABASE_URL is not configured in Vercel Environment Variables"
+
+    return {
+        "status": "ok" if db_ok else "warning",
+        "database": db_detail,
+        "environment_variables": {
+            "DATABASE_URL": bool(DATABASE_URL and "dummy" not in DATABASE_URL),
+            "ADMIN_USERNAME": bool(ADMIN_USERNAME),
+            "ADMIN_PASSWORD": bool(ADMIN_PASSWORD),
+            "JWT_SECRET": bool(JWT_SECRET and not JWT_SECRET.startswith("kp_portfolio_")),
+        },
+    }
+
+
 app.include_router(api_router)
 
 FRONTEND_BUILD_DIR = ROOT_DIR.parent / "frontend" / "build"
@@ -699,6 +723,15 @@ if FRONTEND_BUILD_DIR.exists():
         if index_file.exists():
             return FileResponse(index_file)
         raise HTTPException(status_code=404, detail="Index file not found")
+else:
+    @app.get("/")
+    async def fallback_root():
+        return {
+            "status": "online",
+            "message": "Karan Pande Photography API is running",
+            "health": "/api/health",
+            "docs": "/docs",
+        }
 
 cors_origins = [origin.strip() for origin in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",") if origin.strip()]
 
@@ -713,15 +746,26 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def on_startup():
-    await client.initialize()
-    await db.albums.create_index([("category", 1), ("slug", 1)], unique=True)
-    await db.albums.create_index("id", unique=True)
-    await db.media.create_index("id", unique=True)
-    await db.media.create_index([("album_id", 1), ("order", 1)])
-    await db.testimonials.create_index("id", unique=True)
-    await seed_if_empty()
+    if not DATABASE_URL or "dummy" in DATABASE_URL:
+        logger.warning("DATABASE_URL is not configured. Backend starting in degraded mode.")
+        return
+    try:
+        await client.initialize()
+        await db.albums.create_index([("category", 1), ("slug", 1)], unique=True)
+        await db.albums.create_index("id", unique=True)
+        await db.media.create_index("id", unique=True)
+        await db.media.create_index([("album_id", 1), ("order", 1)])
+        await db.testimonials.create_index("id", unique=True)
+        await seed_if_empty()
+        logger.info("Database initialized and seeded successfully.")
+    except Exception as e:
+        logger.exception("Error during database startup: %s", e)
 
 
 @app.on_event("shutdown")
 async def on_shutdown():
-    await client.close()
+    if client and getattr(client, "pool", None) and not client.pool.closed:
+        try:
+            await client.close()
+        except Exception:
+            pass
