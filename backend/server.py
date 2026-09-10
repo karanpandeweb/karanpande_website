@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 import re
 import logging
 import uuid
@@ -777,17 +778,21 @@ async def on_startup():
     if not DATABASE_URL or "dummy" in DATABASE_URL:
         logger.warning("DATABASE_URL is not configured. Backend starting in degraded mode.")
         return
-    try:
-        await client.initialize()
-        await db.albums.create_index([("category", 1), ("slug", 1)], unique=True)
-        await db.albums.create_index("id", unique=True)
-        await db.media.create_index("id", unique=True)
-        await db.media.create_index([("album_id", 1), ("order", 1)])
-        await db.testimonials.create_index("id", unique=True)
-        await seed_if_empty()
-        logger.info("Database initialized and seeded successfully.")
-    except Exception as e:
-        logger.exception("Error during database startup: %s", e)
+
+    async def _init_bg():
+        try:
+            await client.initialize()
+            await db.albums.create_index([("category", 1), ("slug", 1)], unique=True)
+            await db.albums.create_index("id", unique=True)
+            await db.media.create_index("id", unique=True)
+            await db.media.create_index([("album_id", 1), ("order", 1)])
+            await db.testimonials.create_index("id", unique=True)
+            await seed_if_empty()
+            logger.info("Database initialized and seeded successfully.")
+        except Exception as e:
+            logger.warning("Database background initialization notice: %s", e)
+
+    asyncio.create_task(_init_bg())
 
 
 @app.on_event("shutdown")

@@ -67,10 +67,15 @@ class PostgresCollection:
         self.name = name
 
     async def _all_documents(self) -> list[dict[str, Any]]:
-        async with self.store.pool.connection() as connection:
-            async with connection.cursor(row_factory=dict_row) as cursor:
-                await cursor.execute("select data from documents where collection = %s", (self.name,))
-                return [row["data"] for row in await cursor.fetchall()]
+        try:
+            if self.store.pool.closed:
+                await self.store.pool.open(wait=False)
+            async with self.store.pool.connection(timeout=5.0) as connection:
+                async with connection.cursor(row_factory=dict_row) as cursor:
+                    await cursor.execute("select data from documents where collection = %s", (self.name,))
+                    return [row["data"] for row in await cursor.fetchall()]
+        except Exception:
+            return []
 
     async def count_documents(self, query: dict[str, Any]) -> int:
         return sum(1 for document in await self._all_documents() if _matches(document, query))
@@ -87,7 +92,9 @@ class PostgresCollection:
     async def insert_one(self, document: dict[str, Any]) -> WriteResult:
         stored = dict(document)
         document_id = str(stored.get("_id") or stored.get("id") or uuid.uuid4())
-        async with self.store.pool.connection() as connection:
+        if self.store.pool.closed:
+            await self.store.pool.open(wait=False)
+        async with self.store.pool.connection(timeout=5.0) as connection:
             await connection.execute(
                 "insert into documents (collection, document_id, data) values (%s, %s, %s)",
                 (self.name, document_id, Jsonb(stored)),
@@ -109,7 +116,9 @@ class PostgresCollection:
             current = dict(query)
         current.update(update.get("$set", {}))
         document_id = str(current.get("_id") or current.get("id") or uuid.uuid4())
-        async with self.store.pool.connection() as connection:
+        if self.store.pool.closed:
+            await self.store.pool.open(wait=False)
+        async with self.store.pool.connection(timeout=5.0) as connection:
             await connection.execute(
                 """
                 insert into documents (collection, document_id, data)
@@ -132,7 +141,9 @@ class PostgresCollection:
         if document is None:
             return WriteResult()
         document_id = str(document.get("_id") or document.get("id"))
-        async with self.store.pool.connection() as connection:
+        if self.store.pool.closed:
+            await self.store.pool.open(wait=False)
+        async with self.store.pool.connection(timeout=5.0) as connection:
             result = await connection.execute(
                 "delete from documents where collection = %s and document_id = %s",
                 (self.name, document_id),
@@ -159,8 +170,10 @@ class PostgresStore:
             min_size=0,
             max_size=5,
             open=False,
+            timeout=5.0,
             kwargs={"autocommit": True},
         )
+        self._initialized = False
 
     def __getattr__(self, name: str) -> PostgresCollection:
         if name.startswith("_"):
@@ -168,8 +181,11 @@ class PostgresStore:
         return PostgresCollection(self, name)
 
     async def initialize(self) -> None:
-        await self.pool.open(wait=True)
-        async with self.pool.connection() as connection:
+        if self._initialized:
+            return
+        if self.pool.closed:
+            await self.pool.open(wait=False)
+        async with self.pool.connection(timeout=6.0) as connection:
             await connection.execute(
                 """
                 create table if not exists documents (
@@ -196,6 +212,7 @@ class PostgresStore:
                 )
                 """
             )
+        self._initialized = True
 
     async def command(self, command: str) -> dict[str, int]:
         if command != "ping":
