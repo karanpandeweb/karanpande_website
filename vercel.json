@@ -15,6 +15,7 @@
   ],
   "functions": {
     "api/index.py": {
+      "includeFiles": "backend/**",
       "excludeFiles": "{frontend/node_modules/**,frontend/build/**,frontend/public/**,test_reports/**}",
       "maxDuration": 30
     }
