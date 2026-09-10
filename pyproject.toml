@@ -5,4 +5,4 @@ dependencies = [ "fastapi", "uvicorn", "python-dotenv", "psycopg[binary,pool]", 
 requires-python = "~=3.12.0"
 
 [tool.vercel]
-entrypoint = "backend.server:app"
+entrypoint = "api/index.py:app"
